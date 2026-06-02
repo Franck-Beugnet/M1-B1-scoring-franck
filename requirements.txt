@@ -1,0 +1,8 @@
+# pyrenex_risk_v1 — requirements historiques
+# Python 3.11+
+# Versions alignées sur le template M1-B1 (réentraînement reproductible côté apprenant)
+
+scikit-learn==1.5.1
+pandas==2.2.2
+numpy==1.26.4
+joblib==1.4.2

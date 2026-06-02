@@ -1,0 +1,33 @@
+{
+  "model_name": "pyrenex_risk_v1",
+  "version": "1.0.0",
+  "trained_at": "2026-05-25T09:31:46+00:00",
+  "sklearn_version": "1.5.1",
+  "random_state": 2017,
+  "training_dataset": "lending_club_2017_subset.csv",
+  "dataset_sha256": "0b2db4c247fcb9b124d8093b0996ef83771a45d75c249dc76f28534d68c01eee",
+  "n_rows_total": 12000,
+  "n_rows_train": 9600,
+  "n_rows_test": 2400,
+  "default_rate_overall": 0.14791666666666667,
+  "metrics_test_split": {
+    "accuracy": 0.8491666666666666,
+    "f1_macro": 0.5018302920210277,
+    "roc_auc": 0.7296295949589181,
+    "confusion_matrix": [
+      [
+        2021,
+        11
+      ],
+      [
+        351,
+        17
+      ]
+    ]
+  },
+  "notes": [
+    "D\u00e9marche 2017 \u2014 pas de stratify, pas de class_weight, hyperparams default.",
+    "F1 macro et ROC-AUC recalcul\u00e9s a posteriori (non rapport\u00e9s \u00e0 l'\u00e9poque).",
+    "Preprocessing fit sur tout le dataset avant split (fuite l\u00e9g\u00e8re assum\u00e9e)."
+  ]
+}
