@@ -17,12 +17,23 @@ from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
-# TODO — fill these lists from your EDA
 NUMERIC_FEATURES: list[str] = [
-    # e.g. "loan_amnt", "int_rate", "annual_inc", ...
+    "loan_amnt",
+    "int_rate",
+    "installment",
+    "annual_inc",
+    "dti",
+    "delinq_2yrs",
+    "fico_range_low",
+    "revol_util",
 ]
 CATEGORICAL_FEATURES: list[str] = [
-    # e.g. "term", "grade", "home_ownership", "purpose", ...
+    "term",
+    "grade",
+    "home_ownership",
+    "verification_status",
+    "purpose",
+    "emp_length",
 ]
 TARGET_COLUMN: str = "loan_status"
 TARGET_MAPPING: dict[str, int] = {"Fully Paid": 0, "Charged Off": 1}
@@ -38,8 +49,25 @@ def load_dataset(path: Path) -> tuple[pd.DataFrame, pd.Series]:
         (X, y) where X is the feature DataFrame and y the target Series.
     """
     df = pd.read_csv(path)
+
+    expected_columns = set(NUMERIC_FEATURES + CATEGORICAL_FEATURES + [TARGET_COLUMN])
+    missing_columns = sorted(expected_columns - set(df.columns))
+    if missing_columns:
+        raise ValueError(
+            "Dataset missing required baseline columns: "
+            f"{missing_columns}"
+        )
+
     y = df[TARGET_COLUMN].map(TARGET_MAPPING)
-    X = df.drop(columns=[TARGET_COLUMN])
+    if y.isna().any():
+        unknown_labels = sorted(df.loc[y.isna(), TARGET_COLUMN].dropna().unique().tolist())
+        raise ValueError(
+            "Unknown labels found in target column. "
+            f"Expected {list(TARGET_MAPPING)} but found {unknown_labels}."
+        )
+
+    # Keep only baseline features and preserve ordering for reproducibility.
+    X = df[NUMERIC_FEATURES + CATEGORICAL_FEATURES].copy()
     return X, y
 
 

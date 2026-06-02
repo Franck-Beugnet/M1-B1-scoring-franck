@@ -71,8 +71,14 @@ def update_metadata(model_path: Path, metrics: dict) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Evaluate Pyrenex risk model on holdout")
-    parser.add_argument("--model", default="models/pyrenex_risk_v2.joblib", type=Path)
-    parser.add_argument("--data", default="data/lending_club_holdout.csv", type=Path)
+    
+    # Compute robust default paths relative to project root, not current directory
+    project_root = Path(__file__).parent.parent
+    default_model = project_root / "models" / "pyrenex_risk_v2_default.joblib"
+    default_data = project_root / "data" / "lending_club_holdout.csv"
+    
+    parser.add_argument("--model", default=str(default_model), type=Path)
+    parser.add_argument("--data", default=str(default_data), type=Path)
     parser.add_argument(
         "--update-meta",
         action="store_true",
