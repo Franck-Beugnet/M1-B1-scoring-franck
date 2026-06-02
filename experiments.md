@@ -98,20 +98,22 @@
 > ton modèle retenu parmi les `exp_NNN` ci-dessus. Le holdout n'est consulté
 > qu'ici.
 
-- **Date** : YYYY-MM-DD HH:MM
+- **Date** : 2026-06-02
 - **Expérience retenue** : exp_003 (trial_05)
-- **Modèle persisté** : `models/pyrenex_risk_v2.joblib`
-- **Données holdout** : `data/lending_club_holdout.csv` (sha256 …, n=…)
+- **Modèle persisté** : `models/pyrenex_risk_v2_trial_05.joblib`
+- **Données holdout** : `data/lending_club_holdout.csv` (sha256 b5ca9339a6ddc4303b73e7b7529329de44e1bcfe72371639eb3d4a8a6209fc77, n=6000)
 - **Métriques** :
-  - F1 macro : …
-  - F1 défaut : …
-  - ROC-AUC : …
-  - Recall défaut : …
+  - F1 macro : 0.6108
+  - F1 défaut : 0.4347
+  - ROC-AUC : 0.7348
+  - Recall défaut : 0.6473
+  - Precision défaut : 0.3272
+  - Accuracy : 0.6905
 - **Matrice de confusion** :
 
 |  | Pred Fully Paid | Pred Charged Off |
 |---|---|---|
-| **Vrai Fully Paid** | … | … |
-| **Vrai Charged Off** | … | … |
+| **Vrai Fully Paid** | 3429 | 1468 |
+| **Vrai Charged Off** | 389 | 714 |
 
-- **Comparaison baseline 2017** : (cf. `verdict.md`)
+- **Comparaison baseline 2017** : F1 macro supérieur (0.6108 vs 0.5018), recall défaut massivement amélioré (0.6473 vs 0.0500), F1 défaut en forte hausse (0.4347 vs 0.0859 calculé depuis la matrice 2017), ROC-AUC légèrement meilleur (0.7348 vs 0.7296). En contrepartie, accuracy plus faible (0.6905 vs 0.8492) et précision défaut plus basse (0.3272 vs 0.6100), ce qui reflète un modèle volontairement moins conservateur.

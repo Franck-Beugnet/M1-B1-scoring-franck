@@ -34,6 +34,48 @@
       ]
     ]
   },
+  "metrics_holdout": {
+    "f1_macro": 0.6108,
+    "f1_default": 0.4347,
+    "roc_auc": 0.7348,
+    "confusion_matrix": [
+      [
+        3429,
+        1468
+      ],
+      [
+        389,
+        714
+      ]
+    ],
+    "classification_report": {
+      "Remboursé": {
+        "precision": 0.8981141959140911,
+        "recall": 0.7002246273228507,
+        "f1-score": 0.7869191049913942,
+        "support": 4897.0
+      },
+      "Défaut": {
+        "precision": 0.32722273143904673,
+        "recall": 0.6473254759746147,
+        "f1-score": 0.434703196347032,
+        "support": 1103.0
+      },
+      "accuracy": 0.6905,
+      "macro avg": {
+        "precision": 0.6126684636765689,
+        "recall": 0.6737750516487326,
+        "f1-score": 0.6108111506692131,
+        "support": 6000.0
+      },
+      "weighted avg": {
+        "precision": 0.7931653150280954,
+        "recall": 0.6905,
+        "f1-score": 0.7221700804522724,
+        "support": 6000.0
+      }
+    }
+  },
   "feature_columns": {
     "numeric": [
       "loan_amnt",

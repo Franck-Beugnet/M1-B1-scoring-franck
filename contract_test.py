@@ -13,7 +13,7 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-MODEL_PATH = Path(__file__).parent / "models" / "pyrenex_risk_v2.joblib"
+MODEL_PATH = Path(__file__).parent / "models" / "pyrenex_risk_v2_trial_05.joblib"
 
 
 def contract_test_model(
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     # ⚠️ Le `.drop(columns=["loan_status"])` est essentiel : le pipeline
     #    attend les features uniquement, pas la cible.
 
-    expected_first_proba: list[float] | None = None  # TODO — colle ici les 2 floats du print
+    expected_first_proba: list[float] | None = [0.7847920713170847, 0.21520792868291405] 
 
     if expected_first_proba is None:
         raise NotImplementedError(

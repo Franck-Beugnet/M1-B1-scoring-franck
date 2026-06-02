@@ -5,31 +5,30 @@
 
 ## Contexte
 
-(En une phrase : pourquoi ce travail, qu'est-ce qui était attendu.)
+Pyrenex Crédit souhaitait challenger la baseline historique `pyrenex_risk_v1` (2017) sur le nouveau dataset Lending Club 2025 et décider d'un éventuel remplacement par un modèle v2 plus efficace sur la détection des défauts.
 
 ## Démarche
 
-(En 2-3 phrases : dataset utilisé, split, nombre de configurations testées,
-critères d'évaluation.)
+Le travail a été réalisé sur `lending_club_train.csv` (24k lignes), avec un split interne `test_size=0.2`, `stratify=y`, `random_state=42`, puis une évaluation finale unique sur `lending_club_holdout.csv` (6k lignes). 
+Nous avons comparé 12 configurations RandomForest (`default`, `balanced`, `trial_01..trial_10`) avec pipeline reproductible (imputation + standardisation + one-hot). 
+Le modèle retenu avant holdout est `trial_05`, sélectionné principalement sur les métriques orientées risque défaut (`F1 défaut`, `recall défaut`, `balanced accuracy`).
 
 ## Verdict chiffré
 
 | Métrique | Baseline 2017 (Pyrenex-risk-v1) | Modèle retenu (v2) | Variation |
 |---|---|---|---|
-| F1 macro (holdout) | … | … | … |
-| F1 défaut | … | … | … |
-| ROC-AUC | … | … | … |
-| Recall défaut | … | … | … |
+| F1 macro (holdout) | 0.5018 | 0.6108 | +0.1090 |
+| F1 défaut | 0.0859 | 0.4347 | +0.3488 |
+| ROC-AUC | 0.7296 | 0.7348 | +0.0052 |
+| Recall défaut | 0.0500 | 0.6473 | +0.5973 |
 
-**Configuration retenue** : (rappel des hyperparamètres principaux)
+**Configuration retenue** : `RandomForestClassifier(n_estimators=300, max_depth=8, min_samples_leaf=20, class_weight='balanced_subsample', max_features='sqrt', random_state=42, n_jobs=-1)`.
 
 ## Trade-off explicité au métier
 
-(2-3 phrases : qu'est-ce que le client gagne ? qu'est-ce qu'il perd ?
-Par exemple : *« le rappel défaut passe de 14% à 61% — soit 4× plus de
-mauvais payeurs détectés — au prix d'une précision défaut qui passe de
-38% à 41%. En clair : pour rattraper plus de défauts, le modèle déclenche
-davantage de fausses alertes. »*)
+Le gain principal est la détection des défauts: le rappel défaut passe de 5.0% à 64.7%, soit environ 13x plus de défauts identifiés. 
+Le coût de ce gain est une hausse des faux positifs: la précision défaut baisse (0.6100 → 0.3272) et l'accuracy globale baisse (0.8492 → 0.6905). 
+En clair, le v2 est moins conservateur: il attrape beaucoup plus de dossiers risqués, mais au prix d'un volume plus élevé d'alertes à traiter métier.
 
 ## Précautions avant mise en production
 
@@ -43,9 +42,8 @@ davantage de fausses alertes. »*)
 
 ## Recommandation
 
-✅ **Remplacer Pyrenex-risk-v1** par v2 *OU* ⛔ **Ne pas remplacer** —
-choisis et justifie en une phrase.
+✅ **Remplacer Pyrenex-risk-v1** par v2, car l'objectif risque (ne pas laisser passer les défauts) est nettement mieux atteint, avec une amélioration massive du rappel et du F1 défaut, sous réserve d'aligner le seuil de décision et la capacité opérationnelle à gérer davantage de faux positifs.
 
 ---
 
-*Signé : <prenom> <nom>, FastIA, le YYYY-MM-DD*
+*Signé : Franck BEUGNET, le 2026-06-02*

@@ -74,7 +74,7 @@ def main() -> None:
     
     # Compute robust default paths relative to project root, not current directory
     project_root = Path(__file__).parent.parent
-    default_model = project_root / "models" / "pyrenex_risk_v2_default.joblib"
+    default_model = project_root / "models" / "pyrenex_risk_v2_trial_05.joblib"
     default_data = project_root / "data" / "lending_club_holdout.csv"
     
     parser.add_argument("--model", default=str(default_model), type=Path)
