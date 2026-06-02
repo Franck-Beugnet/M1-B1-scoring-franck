@@ -1,116 +1,136 @@
-# pyrenex_risk_v1 — Baseline historique Pyrenex Crédit
+# M1-B1 — Squelette repo (Pyrenex Crédit scoring)
 
-> Modèle de scoring du risque de défaut, entraîné en 2017, encore en
-> production. Référence de comparaison pour le brief **M1-B1** :
-> remplaçons-nous ce modèle ou pas ?
+> **Repo template GitHub.** Clique sur **« Use this template »** en haut à
+> droite de cette page → **Create a new repository** → nomme-le
+> `M1-B1-scoring-<prénom>` sur **ton** compte GitHub personnel.
+> C'est ce nouveau repo que tu cloneras pour travailler.
 
-## Contexte
+---
 
-En 2017, Pyrenex Crédit a déployé un modèle RandomForest pour scorer les
-demandes de prêt à la conso. Le modèle tourne en production depuis. La
-démarche utilisée à l'époque est consignée dans `src/train_v1.py` — code
-historique, conservé tel quel.
-
-Aujourd'hui (M1-B1) : on dispose d'un nouveau dataset (~30 k lignes) et
-on veut savoir s'il faut **réentraîner**, **améliorer la démarche**, ou
-**garder l'existant**.
-
-## Métriques rapportées (test split 20% de 12k)
-
-| Métrique | Valeur | Note |
-|---|---|---|
-| **Accuracy** | **0.8492** | C'est ce qui a été rapporté à l'époque. |
-| F1 macro | 0.5018 | Recalculé a posteriori — non rapporté en 2017. |
-| ROC-AUC | 0.7296 | Recalculé a posteriori. |
-| Precision (Charged Off) | 0.61 | Sur 28 prédits défaut, 17 le sont vraiment. |
-| **Recall (Charged Off)** | **0.05** | ⚠️ Sur 368 vrais défauts, on en détecte 17 (~5%). |
-
-**Matrice de confusion** (lignes = vérité, colonnes = prédiction) :
-
-|  | Pred Fully Paid | Pred Charged Off |
-|---|---|---|
-| **Vrai Fully Paid** | 2021 | 11 |
-| **Vrai Charged Off** | 351 | 17 |
-
-> 💡 Lecture critique (à mener par l'apprenant) : 95% des défauts ne sont
-> pas détectés. Le modèle est très conservateur — il dit presque toujours
-> « pas de défaut ». Le coût métier de ces faux négatifs est colossal.
-
-## Démarche datée — angles morts assumés
-
-Le code 2017 (`src/train_v1.py`) contient des choix qu'on **ne ferait plus**
-aujourd'hui :
-
-1. **Pas de `stratify`** dans le `train_test_split` → la classe minoritaire
-   peut être sur/sous-représentée dans le test.
-2. **Pas de `class_weight`** → le modèle a peu d'incitation à apprendre la
-   classe minoritaire.
-3. **Hyperparamètres par défaut** (`n_estimators=100`, `max_depth=None`) →
-   aucun tuning.
-4. **Preprocessing fit sur tout le dataset** avant le split → fuite légère.
-5. **Métrique rapportée = accuracy** → trompeuse en classe déséquilibrée.
-
-Ces angles morts sont **l'objet du brief M1-B1** : les détecter, les
-documenter, proposer un v2 qui les corrige (ou justifier de ne pas le
-faire).
-
-## Schéma du dataset (commun avec le 2025)
-
-15 colonnes — cf. [`data/generate_2017.py`](data/generate_2017.py) pour les
-définitions précises. Cible : `loan_status` ∈ {`Fully Paid`, `Charged Off`}.
-
-Différences 2017 vs 2025 (à observer en EDA côté apprenant) :
-- 2017 : 12 k lignes, ~15% défauts, pas de NaN
-- 2025 : 30 k lignes, ~18% défauts, NaN sur `emp_length` (4%) et `revol_util` (1.5%)
-- Distribution des grades plus risquée en 2025 (mix moins safe)
-
-## Reproduire l'entraînement baseline
+## 🚀 Démarrage (4 commandes)
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+# 0. Clone ton repo perso fraîchement créé
+git clone git@github.com:<ton-user>/M1-B1-scoring-<prenom>.git
+cd M1-B1-scoring-<prenom>
+
+# 1. Environnement virtuel
+python -m venv .venv && source .venv/bin/activate     # Linux/macOS
+# .venv\Scripts\activate                              # Windows
+
+# 2. Dépendances
 pip install -r requirements.txt
 
-# 1. (Re)générer le dataset 2017
-cd data && python generate_2017.py && cd ..
-
-# 2. (Re)entraîner le modèle baseline
-cd src && python train_v1.py
-# → produit ../models/pyrenex_risk_v1.joblib + .json
+# 3. Vérification
+python src/train.py --help     # → doit afficher l'usage du script
 ```
 
-## Charger le modèle baseline depuis ton repo M1-B1
+Si ces 4 commandes marchent, ton poste est prêt.
 
-```python
-import joblib
-bundle = joblib.load("path/to/pyrenex_risk_v1.joblib")
+---
 
-# Le bundle contient toutes les briques pour appliquer le pipeline 2017 :
-num_imputer = bundle["num_imputer"]
-scaler = bundle["scaler"]
-cat_imputer = bundle["cat_imputer"]
-encoder = bundle["encoder"]
-model = bundle["model"]
+## 📁 Structure du repo
 
-# Pour scorer un nouveau DataFrame X (mêmes colonnes que 2017) :
-X_num = scaler.transform(num_imputer.transform(X[bundle["numeric_features"]]))
-X_cat = encoder.transform(cat_imputer.transform(X[bundle["categorical_features"]]))
-X_prepared = np.hstack([X_num, X_cat])
-y_pred = model.predict(X_prepared)
+```
+M1-B1-scoring-<prenom>/
+├── data/
+│   ├── lending_club_train.csv           # à télécharger (cf. ci-dessous)
+│   └── lending_club_holdout.csv         # à télécharger
+├── notebooks/
+│   └── M1-B1_template.ipynb             # à dupliquer en M1-B1_<prenom>_scoring.ipynb
+├── src/
+│   ├── preprocess.py                    # transformations reproductibles
+│   ├── train.py                         # script d'entraînement
+│   └── evaluate.py                      # métriques sur holdout
+├── models/                              # .joblib + .json produits ici
+│   └── .gitkeep
+├── ressources/                          # 📚 mini-cours d'appui (lecture juste-à-temps)
+│   ├── 01_Pandas_Sklearn_split_essentiel.md
+│   ├── 02_Metrics_classif_desequilibree_essentiel.md
+│   ├── 03_RandomForest_hyperparams_essentiel.md
+│   ├── 04_Tracage_experiments_md_essentiel.md
+│   ├── 05_Persistance_modele_joblib_essentiel.md
+│   ├── liens_officiels.md
+│   └── README.md                        # ordre de mobilisation + objectifs
+├── contract_test.py                     # à compléter — valide shapes/classes/probas du .joblib
+├── experiments.md                       # à compléter run par run
+├── verdict.md                           # à rédiger en fin de journée
+├── requirements.txt
+├── .gitignore
+└── README.md (ce fichier — à compléter)
 ```
 
-> ⚠️ Tu peux scorer le nouveau dataset 2025 avec ce modèle pour mesurer
-> sa **dérive de performance** — c'est un excellent point de comparaison
-> avant ton réentraînement. Mais c'est **toi** qui choisis si tu fais ça.
+---
 
-## Métadonnées complètes
+## 📚 Mini-cours d'appui
 
-Voir [`models/pyrenex_risk_v1.json`](models/pyrenex_risk_v1.json).
+Les **5 mini-cours pédagogiques** du brief sont fournis dans
+[`./ressources/`](./ressources/). Chacun se lit en ~15-20 min, **au moment où
+tu en as besoin** pendant la journée :
 
-## Pour le brief M1-B1
+| Tâche | Mini-cours |
+|---|---|
+| EDA + split stratifié | [`01_Pandas_Sklearn_split_essentiel.md`](./ressources/01_Pandas_Sklearn_split_essentiel.md) |
+| Métriques pour classification déséquilibrée | [`02_Metrics_classif_desequilibree_essentiel.md`](./ressources/02_Metrics_classif_desequilibree_essentiel.md) |
+| Hyperparamètres RandomForest | [`03_RandomForest_hyperparams_essentiel.md`](./ressources/03_RandomForest_hyperparams_essentiel.md) |
+| Traçage des runs (`experiments.md`) | [`04_Tracage_experiments_md_essentiel.md`](./ressources/04_Tracage_experiments_md_essentiel.md) |
+| Persistance modèle (joblib + JSON) | [`05_Persistance_modele_joblib_essentiel.md`](./ressources/05_Persistance_modele_joblib_essentiel.md) |
 
-- Ce repo est **en lecture seule** côté apprenant.
-- Tu **ne dois pas** retoucher au code 2017 — c'est une référence figée.
-- Tu peux **charger** le `.joblib`, le **scorer** sur le 2025, et **comparer**
-  aux performances rapportées ci-dessus.
-- Ton verdict final (`verdict.md` dans ton repo perso) doit dire : remplace
-  ou garde, et pourquoi (chiffres à l'appui).
+Cf. [`./ressources/README.md`](./ressources/README.md) pour l'ordre de mobilisation détaillé.
+
+---
+
+## 📥 Données
+
+Le dataset Lending Club sous-échantillonné (~30 k lignes) t'est fourni par
+la formatrice mardi 9h. Place les 2 fichiers dans `data/` :
+
+- `data/lending_club_train.csv` (~24 k lignes)
+- `data/lending_club_holdout.csv` (~6 k lignes — **à ne PAS toucher** pendant l'entraînement)
+
+---
+
+## 🧭 Démarche attendue
+
+1. **Comprends la baseline** : clone le repo public
+   [`Formation-SIMPLON-IA/pyrenex-risk-v1`](https://github.com/Formation-SIMPLON-IA/pyrenex-risk-v1),
+   lis le code et les métriques rapportées.
+2. **EDA** dans le notebook (cellules markdown structurées).
+3. **Split stratifié** avec `random_state=42`. Le `holdout` reste intact
+   jusqu'à l'étape 6 (cf. règle d'or *comparabilité*).
+4. **Entraînement** d'au moins 2 jeux d'hyperparamètres dans `src/train.py`.
+   Trace chaque run dans `experiments.md` avec score `test` interne (pas
+   le holdout).
+5. **Évaluation finale sur le holdout** avec `src/evaluate.py` —
+   **une seule fois**.
+6. **Persistance** du Pipeline complet : `models/pyrenex_risk_v2.joblib`
+   + `pyrenex_risk_v2.json` avec les **5 clés obligatoires**
+   (`model_version`, `created_at`, `sklearn_version`, `dataset_sha256`,
+   `metrics_holdout`).
+7. **Contract test** : complète `contract_test.py` et lance-le dans un
+   script séparé — tous les `assert` doivent passer.
+8. **Verdict** dans `verdict.md` (1 page max) + tag git `v2.0.0`.
+
+Mini-cours d'appui : voir [`./ressources/`](./ressources/).
+
+---
+
+## ✅ Conventions de code
+
+- Python 3.11+
+- Type hints sur toutes les signatures publiques
+- Pas de `print` — utiliser **Loguru**
+- `random_state=42` partout où il y a de l'aléa
+- `pathlib.Path` pour les chemins (pas de `os.path`)
+
+---
+
+## 🆘 Bloqué·e ?
+
+1. Relis le mini-cours correspondant à ta tâche actuelle (cf.
+   [`./ressources/README.md`](./ressources/README.md)).
+2. Vérifie ton split avec **2 runs successifs** : mêmes shapes, mêmes
+   contenus → reproductibilité OK.
+3. Compare tes métriques à celles de la baseline `pyrenex-risk-v1` —
+   un écart > 50% absolu = relire ton preprocessing.
+4. Demande en direct mardi.

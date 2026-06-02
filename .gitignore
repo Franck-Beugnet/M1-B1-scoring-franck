@@ -1,15 +1,49 @@
 # Python
 __pycache__/
-*.pyc
-*.pyo
+*.py[cod]
+*$py.class
+*.so
+.Python
 .venv/
 venv/
-
-# OS
-.DS_Store
-Thumbs.db
+env/
+ENV/
+*.egg-info/
+.installed.cfg
+*.egg
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
+*.swo
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Données (sauf petits échantillons explicitement souhaités)
+data/*.csv
+data/*.parquet
+data/*.json
+data/*.tsv
+!data/.gitkeep
+
+# Modèles lourds (gérer manuellement si < 10 Mo compressé)
+models/*.joblib
+models/*.pkl
+models/*.h5
+!models/.gitkeep
+
+# MLflow (si utilisé)
+mlruns/
+mlartifacts/
+
+# Variables d'env
+.env
+.env.local
+
+# Logs
+*.log
+logs/

@@ -1,8 +1,29 @@
-# pyrenex_risk_v1 — requirements historiques
+# M1-B1 — requirements
 # Python 3.11+
-# Versions alignées sur le template M1-B1 (réentraînement reproductible côté apprenant)
 
+# Core ML
 scikit-learn==1.5.1
 pandas==2.2.2
 numpy==1.26.4
+
+# Visualisation
+matplotlib==3.9.2
+seaborn==0.13.2
+
+# Persistence
 joblib==1.4.2
+
+# Notebook
+jupyter==1.1.1
+ipykernel==6.29.5
+
+# Tracking (optionnel — uniquement si tu choisis MLflow)
+# mlflow==2.18.0
+
+# Mission étoile ⭐ optionnelle — décommente selon ton choix
+# Variante A (Gradient Boosting + SHAP) :
+# shap==0.46.0
+# Variante B (Fine-tuning SLM) :
+# transformers==4.46.0
+# torch==2.5.0
+# peft==0.13.0
