@@ -2,7 +2,7 @@
   "model_name": "pyrenex_risk_v2",
   "model_version": "v2.0.0",
   "config_name": "default",
-  "created_at": "2026-06-02T13:08:03.329790+00:00",
+  "created_at": "2026-06-02T15:14:50.431132+00:00",
   "sklearn_version": "1.5.1",
   "python_version": "3.12.10",
   "dataset_sha256": "d2da093bee40024b196e73a0d2d763193782f947e3d60552a3d7bbad0bd944e3",
@@ -11,6 +11,7 @@
     "random_state": 42,
     "n_jobs": -1
   },
+  "model_type": "random_forest",
   "metrics_test_internal": {
     "f1_macro": 0.5131,
     "f1_default": 0.1269,

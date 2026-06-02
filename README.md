@@ -29,6 +29,30 @@ Si ces 4 commandes marchent, ton poste est prêt.
 
 ---
 
+## ✅ Résultat final (M1-B1)
+
+### Reproduire l'entraînement
+
+```bash
+pip install -r requirements.txt
+python src/train.py --config trial_05
+python src/evaluate.py --model models/pyrenex_risk_v2_trial_05.joblib
+```
+
+### Métriques retenues (holdout)
+
+- F1 macro : **0.6108**
+- F1 défaut : **0.4347**
+- ROC-AUC : **0.7348**
+- Recall défaut : **0.6473**
+- Precision défaut : **0.3272**
+
+### Détail de la décision
+
+- Voir le verdict final : [verdict.md](verdict.md)
+
+---
+
 ## 📁 Structure du repo
 
 ```

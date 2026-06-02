@@ -13,7 +13,7 @@ from pathlib import Path
 import joblib
 import pandas as pd
 
-MODEL_PATH = Path(__file__).parent / "models" / "pyrenex_risk_v2_trial_05.joblib"
+MODEL_PATH = Path(__file__).parent / "models" / "pyrenex_risk_v2.joblib"
 
 
 def contract_test_model(

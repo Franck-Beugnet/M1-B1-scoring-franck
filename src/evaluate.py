@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 from pathlib import Path
+from typing import Any
 
 import joblib
 from sklearn.metrics import (
@@ -25,26 +27,32 @@ from sklearn.metrics import (
 
 from preprocess import load_dataset
 
+logger = logging.getLogger(__name__)
 
-def evaluate(model_path: Path, data_path: Path) -> dict:
+
+def compute_holdout_metrics(y_true, y_pred, y_proba) -> dict[str, Any]:
+    """Compute holdout metrics from predictions."""
+    return {
+        "f1_macro": round(f1_score(y_true, y_pred, average="macro"), 4),
+        "f1_default": round(f1_score(y_true, y_pred, pos_label=1), 4),
+        "roc_auc": round(roc_auc_score(y_true, y_proba), 4),
+        "confusion_matrix": confusion_matrix(y_true, y_pred).tolist(),
+        "classification_report": classification_report(
+            y_true, y_pred, target_names=["Remboursé", "Défaut"], output_dict=True
+        ),
+    }
+
+
+def evaluate(model_path: Path, data_path: Path) -> dict[str, Any]:
     pipeline = joblib.load(model_path)
     X_holdout, y_holdout = load_dataset(data_path)
 
     y_pred = pipeline.predict(X_holdout)
     y_proba = pipeline.predict_proba(X_holdout)[:, 1]
-
-    return {
-        "f1_macro": round(f1_score(y_holdout, y_pred, average="macro"), 4),
-        "f1_default": round(f1_score(y_holdout, y_pred, pos_label=1), 4),
-        "roc_auc": round(roc_auc_score(y_holdout, y_proba), 4),
-        "confusion_matrix": confusion_matrix(y_holdout, y_pred).tolist(),
-        "classification_report": classification_report(
-            y_holdout, y_pred, target_names=["Remboursé", "Défaut"], output_dict=True
-        ),
-    }
+    return compute_holdout_metrics(y_holdout, y_pred, y_proba)
 
 
-def update_metadata(model_path: Path, metrics: dict) -> Path:
+def update_metadata(model_path: Path, metrics: dict[str, Any]) -> Path:
     """Write `metrics_holdout` into the JSON file adjacent to `model_path`.
 
     The JSON keeps the same stem as the .joblib (e.g. `pyrenex_risk_v2.json`
@@ -70,11 +78,12 @@ def update_metadata(model_path: Path, metrics: dict) -> Path:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     parser = argparse.ArgumentParser(description="Evaluate Pyrenex risk model on holdout")
     
     # Compute robust default paths relative to project root, not current directory
     project_root = Path(__file__).parent.parent
-    default_model = project_root / "models" / "pyrenex_risk_v2_trial_05.joblib"
+    default_model = project_root / "models" / "pyrenex_risk_v2.joblib"
     default_data = project_root / "data" / "lending_club_holdout.csv"
     
     parser.add_argument("--model", default=str(default_model), type=Path)
@@ -87,11 +96,11 @@ def main() -> None:
     args = parser.parse_args()
 
     metrics = evaluate(args.model, args.data)
-    print(json.dumps(metrics, indent=2, ensure_ascii=False))
+    logger.info("%s", json.dumps(metrics, indent=2, ensure_ascii=False))
 
     if args.update_meta:
         meta_path = update_metadata(args.model, metrics)
-        print(f"\nUpdated {meta_path} with metrics_holdout.")
+        logger.info("Updated %s with metrics_holdout.", meta_path)
 
 
 if __name__ == "__main__":

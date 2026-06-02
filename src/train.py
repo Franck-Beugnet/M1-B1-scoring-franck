@@ -22,11 +22,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import platform
 from datetime import datetime, timezone
 from hashlib import sha256
 from itertools import product
 from pathlib import Path
+from typing import Any
 
 import joblib
 import sklearn
@@ -51,6 +53,8 @@ from preprocess import (
     build_preprocessor,
     load_dataset,
 )
+
+logger = logging.getLogger(__name__)
 
 BASE_CONFIGS: dict[str, dict] = {
     "default": {
@@ -146,7 +150,37 @@ def build_sweep_configs(max_trials: int = 10) -> dict[str, dict]:
 CONFIGS: dict[str, dict] = {**BASE_CONFIGS, **build_sweep_configs(max_trials=10)}
 
 
-def train(config_name: str, data_path: Path, output_dir: Path) -> dict:
+def build_classifier(params: dict[str, Any]):
+    """Build classifier instance from config params."""
+    model_type = params.get("model_type", "random_forest")
+    if model_type == "gradient_boosting":
+        return GradientBoostingClassifier(
+            n_estimators=params["n_estimators"],
+            learning_rate=params["learning_rate"],
+            max_depth=params["max_depth"],
+            min_samples_leaf=params["min_samples_leaf"],
+            min_samples_split=params["min_samples_split"],
+            subsample=params["subsample"],
+            max_features=params["max_features"],
+            random_state=params["random_state"],
+        )
+    return RandomForestClassifier(**params)
+
+
+def compute_metrics(y_true, y_pred, y_proba) -> dict[str, Any]:
+    """Compute evaluation metrics from predictions."""
+    return {
+        "f1_macro": f1_score(y_true, y_pred, average="macro"),
+        "f1_default": f1_score(y_true, y_pred, pos_label=1),
+        "precision_default": precision_score(y_true, y_pred, pos_label=1, zero_division=0),
+        "recall_default": recall_score(y_true, y_pred, pos_label=1, zero_division=0),
+        "balanced_accuracy": balanced_accuracy_score(y_true, y_pred),
+        "roc_auc": roc_auc_score(y_true, y_proba),
+        "confusion_matrix": confusion_matrix(y_true, y_pred).tolist(),
+    }
+
+
+def train(config_name: str, data_path: Path, output_dir: Path) -> dict[str, Any]:
     if config_name not in CONFIGS:
         raise ValueError(f"Unknown config '{config_name}'. Available: {list(CONFIGS)}")
     params = CONFIGS[config_name]
@@ -160,21 +194,7 @@ def train(config_name: str, data_path: Path, output_dir: Path) -> dict:
     pipeline = Pipeline(
         steps=[
             ("preprocess", build_preprocessor()),
-            (
-                "classifier",
-                GradientBoostingClassifier(
-                    n_estimators=params["n_estimators"],
-                    learning_rate=params["learning_rate"],
-                    max_depth=params["max_depth"],
-                    min_samples_leaf=params["min_samples_leaf"],
-                    min_samples_split=params["min_samples_split"],
-                    subsample=params["subsample"],
-                    max_features=params["max_features"],
-                    random_state=params["random_state"],
-                )
-                if model_type == "gradient_boosting"
-                else RandomForestClassifier(**params),
-            ),
+            ("classifier", build_classifier(params)),
         ]
     )
 
@@ -186,15 +206,7 @@ def train(config_name: str, data_path: Path, output_dir: Path) -> dict:
 
     y_pred = pipeline.predict(X_test)
     y_proba = pipeline.predict_proba(X_test)[:, 1]
-    metrics = {
-        "f1_macro": f1_score(y_test, y_pred, average="macro"),
-        "f1_default": f1_score(y_test, y_pred, pos_label=1),
-        "precision_default": precision_score(y_test, y_pred, pos_label=1, zero_division=0),
-        "recall_default": recall_score(y_test, y_pred, pos_label=1, zero_division=0),
-        "balanced_accuracy": balanced_accuracy_score(y_test, y_pred),
-        "roc_auc": roc_auc_score(y_test, y_proba),
-        "confusion_matrix": confusion_matrix(y_test, y_pred).tolist(),
-    }
+    metrics = compute_metrics(y_test, y_pred, y_proba)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     model_path = output_dir / f"pyrenex_risk_v2_{config_name}.joblib"
@@ -227,6 +239,7 @@ def train(config_name: str, data_path: Path, output_dir: Path) -> dict:
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     parser = argparse.ArgumentParser(description="Train Pyrenex risk model")
     parser.add_argument(
         "--config",
@@ -244,34 +257,32 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.config == "all":
-        print("Running full sweep on all configurations...")
+        logger.info("Running full sweep on all configurations...")
         results: dict[str, dict] = {}
         for cfg_name in CONFIGS:
             result = train(cfg_name, args.data, args.output)
             results[cfg_name] = result
-            print(f"[{cfg_name}] metrics: {result['metrics']}")
+            logger.info("[%s] metrics: %s", cfg_name, result["metrics"])
 
         best_cfg = max(results, key=lambda k: results[k]["metrics"]["f1_default"])
         best_result = results[best_cfg]
-        print("\nSweep finished.")
-        print(f"Best config by f1_default: {best_cfg}")
-        print(f"Model saved to {best_result['model_path']}")
-        print(f"Metadata saved to {best_result['meta_path']}")
+        logger.info("Sweep finished.")
+        logger.info("Best config by f1_default: %s", best_cfg)
+        logger.info("Model saved to %s", best_result["model_path"])
+        logger.info("Metadata saved to %s", best_result["meta_path"])
     else:
         if args.config not in CONFIGS:
             raise ValueError(
                 f"Unknown config '{args.config}'. Available: {list(CONFIGS)} or 'all'."
             )
         result = train(args.config, args.data, args.output)
-        print(f"Model saved to {result['model_path']}")
-        print(f"Metadata saved to {result['meta_path']}")
-        print(f"Metrics (test internal): {result['metrics']}")
-        print(
-            "\nNext step: once you have chosen your retained config, promote it:\n"
-            f"  cp {result['model_path']} {args.output}/pyrenex_risk_v2.joblib\n"
-            f"  cp {result['meta_path']} {args.output}/pyrenex_risk_v2.json\n"
-            "  python src/evaluate.py --update-meta"
-        )
+        logger.info("Model saved to %s", result["model_path"])
+        logger.info("Metadata saved to %s", result["meta_path"])
+        logger.info("Metrics (test internal): %s", result["metrics"])
+        logger.info("Next step: once you have chosen your retained config, promote it:")
+        logger.info("  cp %s %s/pyrenex_risk_v2.joblib", result["model_path"], args.output)
+        logger.info("  cp %s %s/pyrenex_risk_v2.json", result["meta_path"], args.output)
+        logger.info("  python src/evaluate.py --update-meta")
 
 
 if __name__ == "__main__":
